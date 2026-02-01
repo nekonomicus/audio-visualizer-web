@@ -350,11 +350,11 @@
         <div class="error-message" id="errorMessage"></div>
 
         <div id="uploadSection">
+            <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" hidden>
             <div class="drop-zone" id="dropZone">
                 <div class="drop-zone-icon">🎵</div>
                 <div class="drop-zone-text">Drop your audio file here</div>
                 <div class="drop-zone-hint">or click to browse • MP3, WAV, OGG, M4A, FLAC</div>
-                <input type="file" id="fileInput" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac" hidden>
             </div>
 
             <div class="settings">
@@ -563,7 +563,12 @@
                 <div class="drop-zone-text">Drop your audio file here</div>
                 <div class="drop-zone-hint">or click to browse • MP3, WAV, OGG, M4A, FLAC</div>
             `;
-            fileInput.value = '';
+            // Reset file input safely
+            try {
+                fileInput.value = '';
+            } catch (e) {
+                // Some browsers don't allow clearing file input
+            }
         });
 
         function showError(msg) {
