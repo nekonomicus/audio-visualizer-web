@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Visualizer Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0a0a0b;
+            color: #fff;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+
+        .drop-zone {
+            border: 2px dashed #333;
+            border-radius: 16px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #111;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #fff;
+            background: #1a1a1a;
+        }
+
+        .drop-zone.has-file {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.05);
+        }
+
+        .drop-zone-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .drop-zone-text {
+            font-size: 1.1rem;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-hint {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .file-name {
+            color: #4ade80;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .settings {
+            background: #111;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .settings h2 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 25px;
+            color: #888;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            display: block;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .style-options, .color-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            padding: 12px 20px;
+            border: 1px solid #333;
+            background: transparent;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .option-btn:hover {
+            border-color: #555;
+            background: #1a1a1a;
+        }
+
+        .option-btn.active {
+            border-color: #fff;
+            background: #fff;
+            color: #000;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: #fff;
+            box-shadow: 0 0 0 2px #0a0a0b, 0 0 0 4px #fff;
+        }
+
+        .color-btn[data-color="white"] { background: #fff; }
+        .color-btn[data-color="cyan"] { background: #00e5ff; }
+        .color-btn[data-color="magenta"] { background: #ff00cc; }
+        .color-btn[data-color="green"] { background: #33ff66; }
+        .color-btn[data-color="orange"] { background: #ff8000; }
+        .color-btn[data-color="gold"] { background: #ffd700; }
+        .color-btn[data-color="cool_gradient"] { background: linear-gradient(135deg, #0066ff, #00ffff); }
+        .color-btn[data-color="warm_gradient"] { background: linear-gradient(135deg, #ff6600, #ffcc00); }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            min-width: 40px;
+            text-align: right;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            background: #eee;
+            transform: translateY(-1px);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: #111;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        .progress-section.visible {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #333;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-text {
+            color: #888;
+            font-size: 1rem;
+        }
+
+        .result-section {
+            display: none;
+            background: #111;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .result-section.visible {
+            display: block;
+        }
+
+        .result-section video {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            background: #000;
+        }
+
+        .download-btn {
+            display: inline-block;
+            padding: 14px 40px;
+            font-size: 1rem;
+            font-weight: 500;
+            background: #4ade80;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn:hover {
+            background: #22c55e;
+            transform: translateY(-1px);
+        }
+
+        .new-btn {
+            display: inline-block;
+            padding: 14px 40px;
+            font-size: 1rem;
+            font-weight: 500;
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .new-btn:hover {
+            border-color: #555;
+            color: #fff;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #444;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .drop-zone { padding: 40px 20px; }
+            .settings { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Audio Visualizer</h1>
+        <p class="subtitle">Create stunning visualizations from your audio files</p>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div id="uploadSection">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">🎵</div>
+                <div class="drop-zone-text">Drop your audio file here</div>
+                <div class="drop-zone-hint">or click to browse • MP3, WAV, OGG, M4A, FLAC</div>
+                <input type="file" id="fileInput" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac" hidden>
+            </div>
+
+            <div class="settings">
+                <h2>Settings</h2>
+                
+                <div class="setting-group">
+                    <label class="setting-label">Visualization Style</label>
+                    <div class="style-options">
+                        <button class="option-btn active" data-style="bars">Bars</button>
+                        <button class="option-btn" data-style="mirrored">Mirrored</button>
+                        <button class="option-btn" data-style="circular">Circular</button>
+                        <button class="option-btn" data-style="waveform">Waveform</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Color</label>
+                    <div class="color-options">
+                        <button class="color-btn active" data-color="white" title="White"></button>
+                        <button class="color-btn" data-color="cyan" title="Cyan"></button>
+                        <button class="color-btn" data-color="magenta" title="Magenta"></button>
+                        <button class="color-btn" data-color="green" title="Green"></button>
+                        <button class="color-btn" data-color="orange" title="Orange"></button>
+                        <button class="color-btn" data-color="gold" title="Gold"></button>
+                        <button class="color-btn" data-color="cool_gradient" title="Cool Gradient"></button>
+                        <button class="color-btn" data-color="warm_gradient" title="Warm Gradient"></button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Number of Bars</label>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="numBars" min="16" max="128" value="64">
+                        <span class="slider-value" id="numBarsValue">64</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" disabled>Generate Video</button>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+            <div class="spinner"></div>
+            <div class="progress-text">Generating your visualization...</div>
+            <div class="progress-text" style="margin-top: 10px; font-size: 0.85rem; color: #555;">This may take a minute for longer audio files</div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <video id="resultVideo" controls></video>
+            <div>
+                <a class="download-btn" id="downloadBtn" href="#" download>Download MP4</a>
+                <button class="new-btn" id="newBtn">Create Another</button>
+            </div>
+        </div>
+
+        <footer>
+            Full HD 1920×1080 • 30fps • Audio included
+        </footer>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const uploadSection = document.getElementById('uploadSection');
+        const progressSection = document.getElementById('progressSection');
+        const resultSection = document.getElementById('resultSection');
+        const resultVideo = document.getElementById('resultVideo');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const newBtn = document.getElementById('newBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const numBarsSlider = document.getElementById('numBars');
+        const numBarsValue = document.getElementById('numBarsValue');
+
+        let selectedFile = null;
+        let selectedStyle = 'bars';
+        let selectedColor = 'white';
+
+        // Drag and drop
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/x-m4a', 'audio/flac', 'audio/aac'];
+            const validExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'];
+            
+            const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+            
+            if (!hasValidExtension && !validTypes.includes(file.type)) {
+                showError('Please select a valid audio file (MP3, WAV, OGG, M4A, FLAC)');
+                return;
+            }
+
+            selectedFile = file;
+            dropZone.classList.add('has-file');
+            dropZone.innerHTML = `
+                <div class="drop-zone-icon">✓</div>
+                <div class="file-name">${file.name}</div>
+                <div class="drop-zone-hint">Click or drop to change file</div>
+            `;
+            generateBtn.disabled = false;
+            hideError();
+        }
+
+        // Style selection
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedStyle = btn.dataset.style;
+            });
+        });
+
+        // Color selection
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedColor = btn.dataset.color;
+            });
+        });
+
+        // Slider
+        numBarsSlider.addEventListener('input', () => {
+            numBarsValue.textContent = numBarsSlider.value;
+        });
+
+        // Generate
+        generateBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            hideError();
+            uploadSection.style.display = 'none';
+            progressSection.classList.add('visible');
+            resultSection.classList.remove('visible');
+
+            const formData = new FormData();
+            formData.append('audio', selectedFile);
+            formData.append('style', selectedStyle);
+            formData.append('color', selectedColor);
+            formData.append('num_bars', numBarsSlider.value);
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Generation failed');
+                }
+
+                // Show result
+                progressSection.classList.remove('visible');
+                resultSection.classList.add('visible');
+                
+                const videoUrl = `/preview/${data.video_id}`;
+                resultVideo.src = videoUrl;
+                downloadBtn.href = `/download/${data.video_id}`;
+                downloadBtn.download = data.video_id;
+
+            } catch (err) {
+                progressSection.classList.remove('visible');
+                uploadSection.style.display = 'block';
+                showError(err.message);
+            }
+        });
+
+        // New video
+        newBtn.addEventListener('click', () => {
+            resultSection.classList.remove('visible');
+            uploadSection.style.display = 'block';
+            resultVideo.src = '';
+            
+            // Reset file selection
+            selectedFile = null;
+            generateBtn.disabled = true;
+            dropZone.classList.remove('has-file');
+            dropZone.innerHTML = `
+                <div class="drop-zone-icon">🎵</div>
+                <div class="drop-zone-text">Drop your audio file here</div>
+                <div class="drop-zone-hint">or click to browse • MP3, WAV, OGG, M4A, FLAC</div>
+            `;
+            fileInput.value = '';
+        });
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.add('visible');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('visible');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+uploads/
+outputs/
+*.mp4
+*.mp3
+*.wav
+.DS_Store
